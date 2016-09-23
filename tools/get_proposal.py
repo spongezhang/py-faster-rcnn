@@ -15,7 +15,7 @@ See README.md for installation instructions before running.
 
 import _init_paths
 from fast_rcnn.config import cfg
-from fast_rcnn.feature_extract_multiscale import im_feature_extract
+from fast_rcnn.feature_extract_multiscale import im_get_box
 from fast_rcnn.nms_wrapper import nms
 from utils.timer import Timer
 import matplotlib.pyplot as plt
@@ -35,19 +35,12 @@ def demo(net, image_name):
     # Load the demo image
     im_file = os.path.join(cfg.WORK_DIR+cfg.DATASET,cfg.SUB_NAME,image_name)
     im = cv2.imread(im_file)
-    #load bbox
-    load_content = sio.loadmat(cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME+'_region_proposals/' + \
-        image_name[0:-3]+'mat')
-    boxes = load_content['boxes']
     # Detect all object classes and regress object bounds
     timer = Timer()
     timer.tic()
-    features = im_feature_extract(net, im, boxes)
-    save_object = np.zeros((2,),dtype=np.object)
-    save_object[0] = features
-    save_object[1] = boxes
-    sio.savemat(cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME+'_multiscale_MAC/' + \
-            image_name[0:-3]+'mat',{'save_object':save_object})
+    boxes = im_get_box(net, im)
+    sio.savemat(cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME+'_region_proposals/' + \
+            image_name[0:-3]+'mat',{'boxes':boxes})
     timer.toc()
     print ('Detection took {:.3f}s for '
            '{:d} object proposals').format(timer.total_time, boxes.shape[0])
@@ -76,7 +69,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     prototxt = os.path.join(cfg.MODELS_DIR, NETS[args.demo_net][0],
-                            'faster_rcnn_alt_opt', 'retrieval_net.pt')
+                            'faster_rcnn_alt_opt', 'rpn_test.pt')
     caffemodel = os.path.join(cfg.DATA_DIR, 'faster_rcnn_models',
                               NETS[args.demo_net][1])
 
@@ -94,7 +87,7 @@ if __name__ == '__main__':
 
     print '\n\nLoaded network {:s}'.format(caffemodel)
 
-    os.system('mkdir -p '+cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME+'_multiscale_MAC/');
+    os.system('mkdir -p '+cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME+'_region_proposals/');
     
     for im_name in os.listdir(cfg.WORK_DIR+cfg.DATASET+'/'+cfg.SUB_NAME):
         if im_name.endswith(".jpg") or im_name.endswith(".JPG") or \
