@@ -12,7 +12,7 @@ RoIDataLayer implements a Caffe Python layer.
 
 import caffe
 from fast_rcnn.config import cfg
-from roi_data_layer.minibatch import get_minibatch
+from siamese_roi_data_layer.minibatch import get_minibatch
 import numpy as np
 import yaml
 from multiprocessing import Process, Queue
@@ -94,51 +94,75 @@ class RoIDataLayer(caffe.Layer):
         idx = 0
         top[idx].reshape(cfg.TRAIN.IMS_PER_BATCH, 3,
             max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
-        self._name_to_top_map['data1'] = idx
+        self._name_to_top_map['data_1'] = idx
         idx += 1
 
         top[idx].reshape(cfg.TRAIN.IMS_PER_BATCH, 3,
             max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
-        self._name_to_top_map['data2'] = idx
+        self._name_to_top_map['data_2'] = idx
         idx += 1
 
         if cfg.TRAIN.HAS_RPN:
             top[idx].reshape(1, 3)
-            self._name_to_top_map['im_info'] = idx
+            self._name_to_top_map['im_info_1'] = idx
+            idx += 1
+            
+            top[idx].reshape(1, 3)
+            self._name_to_top_map['im_info_2'] = idx
             idx += 1
 
             top[idx].reshape(1, 4)
-            self._name_to_top_map['gt_boxes'] = idx
+            self._name_to_top_map['gt_boxes_1'] = idx
+            idx += 1
+            
+            top[idx].reshape(1, 4)
+            self._name_to_top_map['gt_boxes_2'] = idx
             idx += 1
         else: # not using RPN
             # rois blob: holds R regions of interest, each is a 5-tuple
             # (n, x1, y1, x2, y2) specifying an image batch index n and a
             # rectangle (x1, y1, x2, y2)
             top[idx].reshape(1, 5)
-            self._name_to_top_map['rois'] = idx
+            self._name_to_top_map['rois_1'] = idx
+            idx += 1
+            top[idx].reshape(1, 5)
+            self._name_to_top_map['rois_2'] = idx
             idx += 1
 
             # labels blob: R categorical labels in [0, ..., K] for K foreground
             # classes plus background
             top[idx].reshape(1)
-            self._name_to_top_map['labels'] = idx
+            self._name_to_top_map['labels_1'] = idx
+            idx += 1
+            top[idx].reshape(1)
+            self._name_to_top_map['labels_2'] = idx
             idx += 1
 
             if cfg.TRAIN.BBOX_REG:
                 # bbox_targets blob: R bounding-box regression targets with 4
                 # targets per class
                 top[idx].reshape(1, self._num_classes * 4)
-                self._name_to_top_map['bbox_targets'] = idx
+                self._name_to_top_map['bbox_targets_1'] = idx
+                idx += 1
+                
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_targets_2'] = idx
                 idx += 1
 
                 # bbox_inside_weights blob: At most 4 targets per roi are active;
                 # thisbinary vector sepcifies the subset of active targets
                 top[idx].reshape(1, self._num_classes * 4)
-                self._name_to_top_map['bbox_inside_weights'] = idx
+                self._name_to_top_map['bbox_inside_weights_1'] = idx
                 idx += 1
-
                 top[idx].reshape(1, self._num_classes * 4)
-                self._name_to_top_map['bbox_outside_weights'] = idx
+                self._name_to_top_map['bbox_inside_weights_2'] = idx
+                idx += 1
+                
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_outside_weights_1'] = idx
+                idx += 1
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_outside_weights_2'] = idx
                 idx += 1
 
         print 'RoiDataLayer: name_to_top:', self._name_to_top_map
